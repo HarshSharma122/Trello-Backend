@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import connectDB from "./config/db.js";
 import ORG from "./models/org.model/org.model.js";
 import authMiddleware from "./middleware/auth-middleware.js";
+import BOARDS from "./models/boards.model/boards.model.js";
 
 const app = express();
 
@@ -16,7 +17,6 @@ app.use(cookieParser());
 const secret = "secretauth0199829429378479";
 
 connectDB();
-
 // Signup Route
 app.post("/auth/sign-up", async (req, res) => {
   try {
@@ -103,7 +103,7 @@ app.post("/auth/sign-in", async (req, res) => {
 // this is authenticatd route
 app.post("/onboarding/create-org", authMiddleware, async (req, res) => {
   try {
-    const { orgName, email, orgDesc } = await req.body;
+    const { orgname, email, orgDesc } = await req.body;
     const userId = await req.userId;
 
     if (!userId) {
@@ -119,7 +119,7 @@ app.post("/onboarding/create-org", authMiddleware, async (req, res) => {
     }
 
     await ORG.create({
-      orgName,
+      orgname,
       email,
       orgDesc,
       ownerId: userId,
@@ -163,7 +163,206 @@ app.get("/org/org-list", authMiddleware, async (req, res) => {
   }
 });
 
+// delete the org
+
+app.delete("/org/:orgId", authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.params.orgId;
+
+    if (!orgId) {
+      return res.status(411).send({
+        message: "Np org id found",
+      });
+    }
+
+    await ORG.findByIdAndDelete(orgId);
+
+    return res.status(200).send({
+      message: "Org Deleted successFully",
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message: "Internal server error",
+    });
+  }
+});
+
+app.post("/create-board", authMiddleware, async (req, res) => {
+  try {
+    const { boardname, orgId } = await req.body;
+    const userId = await req.userId;
+
+    if (!userId) {
+      return res.status(411).send({
+        message: "User is not authenticated",
+      });
+    }
+
+    if (!boardname || !orgId) {
+      return res.status(411).send({
+        message: "Input field is required",
+      });
+    }
+
+    await BOARDS.create({
+      boardname,
+      orgId,
+      ownerId: userId,
+    });
+
+    return res.status(200).send({
+      message: "Board successFully created",
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message: "Internal server error",
+    });
+  }
+});
+
+app.post("/board/list/:orgId", authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.params.orgId;
+    const boardList = await BOARDS.find({ orgId: orgId });
+    if (!boardList) {
+      return res.status(411).send({
+        message: "No board list for this org",
+      });
+    }
+
+    return res.status(200).json({
+      data: boardList,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message: "Internal server error",
+    });
+  }
+});
+
+app.post("/board/member-add", authMiddleware, async (req, res) => {
+  try {
+    const { email, boardId } = await req.body;
+    const userId = await req.userId;
+
+    if (!userId) {
+      return res.status(411).send({
+        message: "User is not authenticated",
+      });
+    }
+
+    if (!email || !boardId) {
+      return res.status(411).send({
+        message: "Input field is required",
+      });
+    }
+
+    const board = await BOARDS.findById(boardId);
+
+    if (!board) {
+      return res.status(411).send({
+        message: "No board found",
+      });
+    }
+
+    board.boardMembers.push(email);
+
+    await board.save();
+
+    return res.status(200).send({
+      message: "member successFully added",
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message: "Internal server error",
+    });
+  }
+});
+
+app.post("/board/add-list", authMiddleware, async (req, res) => {
+  try {
+    const { listname, boardId } = await req.body;
+    const userId = await req.userId;
+
+    if (!userId) {
+      return res.status(411).send({
+        message: "User is not authenticated",
+      });
+    }
+
+    if (!listname || !boardId) {
+      return res.status(411).send({
+        message: "Input field is required",
+      });
+    }
+
+    const board = await BOARDS.findById(boardId);
+
+    if (!board) {
+      return res.status(411).send({
+        message: "No board found",
+      });
+    }
+
+    board.boardList.push({
+      listname: listname,
+    });
+
+    await board.save();
+
+    return res.status(200).send({
+      message: "Done",
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message: "Internal server error",
+    });
+  }
+});
+
+app.post("/board/add-card", authMiddleware, async (req, res) => {
+  try {
+    const { cardDesc, listId, boardId } = await req.body;
+    const userId = await req.userId;
+
+    if (!userId) {
+      return res.status(411).send({
+        message: "User is not authenticated",
+      });
+    }
+
+    if (!cardDesc || !boardId) {
+      return res.status(411).send({
+        message: "Input field is required",
+      });
+    }
+
+    const board = await BOARDS.findById(boardId);
+
+    if (!board) {
+      return res.status(411).send({
+        message: "No board found",
+      });
+    }
+
+    const ans = board.boardList.find((list) => list._id == listId);
+
+    ans.cards.push({
+      cardDesc: cardDesc,
+    });
+
+    await board.save();
 
 
+    return res.status(200).send({
+      message: "Done",
+      data:board
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message: error,
+    });
+  }
+});
 
 app.listen(3000);
