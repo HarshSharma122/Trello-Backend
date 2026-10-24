@@ -481,7 +481,3 @@ Rather than only following tutorials, I'm building the backend myself to underst
 
 
 **The goal is not just to make the API work — the goal is to understand why it works.**
-
-
-
-**I am giving the 
