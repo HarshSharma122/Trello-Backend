@@ -14,7 +14,7 @@ app.use(express.json());
 app.use(cors());
 app.use(cookieParser());
 
-const secret = "secretauth0199829429378479";
+const secret = "secretKey.....";
 
 connectDB();
 // Signup Route

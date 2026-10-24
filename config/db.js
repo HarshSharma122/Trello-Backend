@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = "mongodb+srv://harsh444577_db_user:cKnKZkBn72Gh58Qm@baantlo.lu4escd.mongodb.net/trello";
+const MONGODB_URI = "mongodb+srv://...";
 
 
 const connectDB = async () => {

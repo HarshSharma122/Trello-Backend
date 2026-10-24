@@ -15,7 +15,7 @@ const authMiddleware = async(req, res, next)=>{
     // Jwt verify that given string is valid or not if valid you get the data which is saved  here i saved userId 
 
 
-    const user = Jwt.verify(cookie, "secretauth0199829429378479");
+    const user = Jwt.verify(cookie, "secretKey.....");
 
     if(!user){
        return res.status(411).send({
