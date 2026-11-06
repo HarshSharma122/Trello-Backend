@@ -37,11 +37,11 @@ const signInSchema = zod.object({
 // Signup Route
 app.post("/auth/sign-up", async (req, res) => {
   try {
-    const { data, success } = signUpSchema.safeParse(req.body);
+    const { data, success, error } = signUpSchema.safeParse(req.body);
 
     if (!success) {
       return res.status(411).send({
-        message: "Incorrect Inputs",
+        message: "Incorrect Inputs", error:JSON.parse(error)
       });
     }
 
@@ -91,11 +91,11 @@ app.post("/auth/sign-up", async (req, res) => {
 
 app.post("/auth/sign-in", async (req, res) => {
   try {
-    const { data, success } = signInSchema.safeParse(req.body);
+    const { data, success ,error} = signInSchema.safeParse(req.body);
 
     if (!success) {
       return res.status(411).send({
-        message: "Incorrect Inputs",
+        message: "Incorrect Inputs", error:JSON.parse(error)
       });
     }
 
