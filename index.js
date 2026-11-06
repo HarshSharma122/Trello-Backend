@@ -37,7 +37,7 @@ const signInSchema = zod.object({
 // Signup Route
 app.post("/auth/sign-up", async (req, res) => {
   try {
-    const { data, success } = signUpSchema.safeParse();
+    const { data, success } = signUpSchema.safeParse(req.body);
 
     if (!success) {
       return res.status(411).send({
@@ -91,7 +91,7 @@ app.post("/auth/sign-up", async (req, res) => {
 
 app.post("/auth/sign-in", async (req, res) => {
   try {
-    const { data, success } = signInSchema.safeParse();
+    const { data, success } = signInSchema.safeParse(req.body);
 
     if (!success) {
       return res.status(411).send({
