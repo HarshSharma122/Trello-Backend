@@ -2,6 +2,10 @@ import express from "express";
 import cors from "cors";
 import USER from "./models/user.model/user.model.js";
 import Jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import zod from "zod";
+import "dotenv/config.js";
+
 import cookieParser from "cookie-parser";
 import connectDB from "./config/db.js";
 import ORG from "./models/org.model/org.model.js";
@@ -14,13 +18,34 @@ app.use(express.json());
 app.use(cors());
 app.use(cookieParser());
 
-const secret = "secretKey.....";
+const secret = process.env.AUTH_SECRET;
 
 connectDB();
+
+// signUp schema
+
+const signUpSchema = zod.object({
+  username: zod.string().min(3),
+  email: zod.email(),
+  password: zod.string().min(7),
+});
+const signInSchema = zod.object({
+  email: zod.email(),
+  password: zod.string().min(7),
+});
+
 // Signup Route
 app.post("/auth/sign-up", async (req, res) => {
   try {
-    const { username, email, password } = await req.body;
+    const { data, success } = signUpSchema.safeParse();
+
+    if (!success) {
+      return res.status(411).send({
+        message: "Incorrect Inputs",
+      });
+    }
+
+    const { username, email, password } = data;
 
     const existUser = await USER.findOne({ email: email });
 
@@ -30,10 +55,11 @@ app.post("/auth/sign-up", async (req, res) => {
       });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
     const user = USER.create({
       username,
       email,
-      password,
+      hashedPassword,
     });
 
     const token = Jwt.sign(
@@ -65,14 +91,31 @@ app.post("/auth/sign-up", async (req, res) => {
 
 app.post("/auth/sign-in", async (req, res) => {
   try {
-    const { email, password } = await req.body;
+    const { data, success } = signInSchema.safeParse();
 
-    const existUser = await USER.findOne({ email: email, password: password });
+    if (!success) {
+      return res.status(411).send({
+        message: "Incorrect Inputs",
+      });
+    }
+
+    const { email, password } = data;
+
+    const existUser = await USER.findOne({ email: email });
 
     if (!existUser) {
       return res.status(411).send({
         message: "Incorrect email and password",
       });
+    }
+
+    const checked = await bcrypt.compare(password, existUser.password);
+
+    if (!checked) {
+      res.status(411).send({
+        message: "Incorrect Details",
+      });
+      return;
     }
 
     const token = Jwt.sign(
@@ -353,10 +396,9 @@ app.post("/board/add-card", authMiddleware, async (req, res) => {
 
     await board.save();
 
-
     return res.status(200).send({
       message: "Done",
-      data:board
+      data: board,
     });
   } catch (error) {
     return res.status(500).send({
